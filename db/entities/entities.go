@@ -4,16 +4,41 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type SweetEntity struct {
-	gorm.Model
-	Name                  string   `json:"name"`
-	ImageClosed           string   `json:"image_closed"`
-	ImageOpen             string   `json:"image_open"`
-	Description           string   `json:"description"`
-	Story                 string   `json:"story"`
-	SourcingValues        []string `json:"sourcing_values"`
-	Ingredients           []string `json:"ingredients"`
-	AllergyInfo           string   `json:"allergy_info"`
-	DietaryCertifications string   `json:"dietary_certifications"`
-	ProductID             string   `json:"productId"`
+type (
+	SweetsCollection struct {
+		Name                  string           `gorm:"type:varchar(100)"`
+		ImageClosed           string           `gorm:"type:varchar(200)"`
+		ImageOpen             string           `gorm:"type:varchar(200)"`
+		Description           string           `gorm:"type:varchar(500)"`
+		Story                 string           `gorm:"type:text"`
+		SourcingValues        []SourcingValues `gorm:"foreignkey:ProductID"`
+		Ingredients           []Ingredients    `gorm:"foreignkey:ProductID"`
+		AllergyInfo           string           `gorm:"type:varchar(200)"`
+		DietaryCertifications string           `gorm:"type:varchar(200)"`
+		ProductID             string           `gorm:"unique;primary_key"`
+	}
+
+	SourcingValues struct {
+		gorm.Model
+		Value     string `gorm:"type:varchar(100)"`
+		ProductID string
+	}
+
+	Ingredients struct {
+		gorm.Model
+		Value     string `gorm:"type:varchar(100)"`
+		ProductID string
+	}
+)
+
+func (SweetsCollection) TableName() string {
+	return "sweets_collection"
+}
+
+func (SourcingValues) TableName() string {
+	return "sweets_sourcing_values"
+}
+
+func (Ingredients) TableName() string {
+	return "sweets_ingredients"
 }

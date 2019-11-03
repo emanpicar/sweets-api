@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/emanpicar/sweets-api/db"
 	"github.com/emanpicar/sweets-api/logger"
 	"github.com/emanpicar/sweets-api/routes"
 	"github.com/emanpicar/sweets-api/settings"
@@ -18,10 +19,12 @@ func main() {
 	logger.Init(settings.GetLogLevel())
 	logger.Log.Infoln("Initializing Sweets API")
 
-	sweetsManager := sweets.NewManager()
+	dbManager := db.NewDBManager()
+	sweetsManager := sweets.NewManager(dbManager)
+	sweetsManager.PopulateDefaultData()
 
 	logger.Log.Fatal(http.ListenAndServeTLS(
-		"127.0.0.1:9988",
+		":9988",
 		"./certs/cert.pem",
 		"./certs/key.pem",
 		routes.NewRouter(sweetsManager),
