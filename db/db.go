@@ -1,7 +1,9 @@
 package db
 
 import (
-	"errors"
+	"fmt"
+
+	"github.com/emanpicar/sweets-api/settings"
 
 	"github.com/emanpicar/sweets-api/db/entities"
 	"github.com/emanpicar/sweets-api/logger"
@@ -13,6 +15,7 @@ type (
 	DBManager interface {
 		BatchFirstOrCreate(data *[]entities.SweetsCollection)
 		Insert(data *entities.SweetsCollection) error
+		UpdateByProductID(pID string, data *entities.SweetsCollection) error
 		GetSweetCollections() *[]entities.SweetsCollection
 	}
 
@@ -33,7 +36,9 @@ func (dbHandler *dbHandler) connect() {
 	logger.Log.Infoln("Establishing connection to DB")
 
 	var err error
-	dbHandler.database, err = gorm.Open("postgres", "host=localhost port=54320 user=secretdbuser dbname=sweetscollection password=secretdbpass sslmode=disable")
+	dbHandler.database, err = gorm.Open("postgres", fmt.Sprintf("host=%v port=%v user=%v dbname=sweetscollection password=%v sslmode=disable",
+		settings.GetDBHost(), settings.GetDBPort(), settings.GetDBUser(), settings.GetDBPass(),
+	))
 
 	if err != nil {
 		logger.Log.Fatalln(err)
@@ -55,11 +60,28 @@ func (dbHandler *dbHandler) BatchFirstOrCreate(swCollection *[]entities.SweetsCo
 }
 
 func (dbHandler *dbHandler) Insert(data *entities.SweetsCollection) error {
-	if dbHandler.database.NewRecord(data) {
-		return errors.New("Already existing in database")
+	err := dbHandler.database.Where(&entities.SweetsCollection{ProductID: data.ProductID}).First(data).Error
+	if err == nil {
+		return fmt.Errorf("Sweets with productID:%v already exist", data.ProductID)
 	}
 
-	dbHandler.database.Create(data)
+	dbHandler.database.FirstOrCreate(data)
+
+	return nil
+}
+
+func (dbHandler *dbHandler) UpdateByProductID(pID string, data *entities.SweetsCollection) error {
+	err := dbHandler.database.Where(&entities.SweetsCollection{ProductID: pID}).First(data).Error
+	if err != nil {
+		return fmt.Errorf("Sweets with productID:%v does not exist", pID)
+	}
+
+	logger.Log.Infof("########## %+v", data)
+	if err := dbHandler.database.Save(data).Error; err != nil {
+		return err
+	}
+	logger.Log.Infof("########## ssss %+v", data)
+
 	return nil
 }
 

@@ -2,6 +2,7 @@ package sweets
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 
 	"github.com/emanpicar/sweets-api/db"
@@ -20,13 +21,13 @@ type (
 		Ingredients           []string `json:"ingredients"`
 		AllergyInfo           string   `json:"allergy_info"`
 		DietaryCertifications string   `json:"dietary_certifications"`
-		ProductID             string   `json:"productId"`
+		ProductID             string   `json:"productId,omitempty"`
 	}
 
 	Manager interface {
 		GetAllSweets() *[]SweetsCollection
-		CreateSweets() *[]entities.SweetsCollection
-		UpdateSweet(params map[string]string) *[]entities.SweetsCollection
+		CreateSweets(reqData *SweetsCollection) (*SweetsCollection, error)
+		UpdateSweet(params map[string]string, reqData *SweetsCollection) (*SweetsCollection, error)
 		DeleteSweet(params map[string]string) *[]entities.SweetsCollection
 		PopulateDefaultData()
 	}
@@ -47,23 +48,32 @@ func (sw *sweetHandler) GetAllSweets() *[]SweetsCollection {
 	return jsonReadyList
 }
 
-func (sw *sweetHandler) CreateSweets() *[]entities.SweetsCollection {
-	sweetsList := []entities.SweetsCollection{
-		entities.SweetsCollection{SourcingValues: []entities.SourcingValues{}, Ingredients: []entities.Ingredients{}},
-		entities.SweetsCollection{SourcingValues: []entities.SourcingValues{}, Ingredients: []entities.Ingredients{}},
+func (sw *sweetHandler) CreateSweets(reqData *SweetsCollection) (*SweetsCollection, error) {
+	if reqData.ProductID == "" {
+		return nil, errors.New("ProductID cannot be empty")
 	}
 
-	return &sweetsList
+	sweetData := sw.jsonSigleSweetToModel(reqData)
+	if err := sw.dbManager.Insert(&sweetData); err != nil {
+		return nil, err
+	}
+
+	return reqData, nil
 }
 
-func (sw *sweetHandler) UpdateSweet(params map[string]string) *[]entities.SweetsCollection {
-	logger.Log.Infof("################# %v", params)
-	sweetsList := []entities.SweetsCollection{
-		entities.SweetsCollection{SourcingValues: []entities.SourcingValues{}, Ingredients: []entities.Ingredients{}},
-		entities.SweetsCollection{SourcingValues: []entities.SourcingValues{}, Ingredients: []entities.Ingredients{}},
+func (sw *sweetHandler) UpdateSweet(params map[string]string, reqData *SweetsCollection) (*SweetsCollection, error) {
+	if reqData.ProductID != "" {
+		return nil, errors.New("ProductID cannot be updated")
 	}
 
-	return &sweetsList
+	sweetData := sw.jsonSigleSweetToModel(reqData)
+	if err := sw.dbManager.UpdateByProductID(params["productId"], &sweetData); err != nil {
+		return nil, err
+	}
+
+	updatedData := sw.modelSingleSweetToJSON(&sweetData)
+
+	return &updatedData, nil
 }
 
 func (sw *sweetHandler) DeleteSweet(params map[string]string) *[]entities.SweetsCollection {
@@ -93,22 +103,26 @@ func (sw *sweetHandler) PopulateDefaultData() {
 	sw.dbManager.BatchFirstOrCreate(sweetsCollectionModel)
 }
 
+func (sw *sweetHandler) jsonSigleSweetToModel(sweet *SweetsCollection) entities.SweetsCollection {
+	return entities.SweetsCollection{
+		Name:                  sweet.Name,
+		ImageClosed:           sweet.ImageClosed,
+		ImageOpen:             sweet.ImageOpen,
+		Description:           sweet.Description,
+		Story:                 sweet.Story,
+		AllergyInfo:           sweet.AllergyInfo,
+		DietaryCertifications: sweet.DietaryCertifications,
+		ProductID:             sweet.ProductID,
+		SourcingValues:        sw.jsonSourcingValuesToModel(sweet.SourcingValues),
+		Ingredients:           sw.jsonIngredientsToModel(sweet.Ingredients),
+	}
+}
+
 func (sw *sweetHandler) jsonSweetsCollectionToModel(jsonStructSweets *[]SweetsCollection) *[]entities.SweetsCollection {
 	var dbEntity []entities.SweetsCollection
 
 	for _, swData := range *jsonStructSweets {
-		dbEntity = append(dbEntity, entities.SweetsCollection{
-			Name:                  swData.Name,
-			ImageClosed:           swData.ImageClosed,
-			ImageOpen:             swData.ImageOpen,
-			Description:           swData.Description,
-			Story:                 swData.Story,
-			AllergyInfo:           swData.AllergyInfo,
-			DietaryCertifications: swData.DietaryCertifications,
-			ProductID:             swData.ProductID,
-			SourcingValues:        sw.jsonSourcingValuesToModel(swData.SourcingValues),
-			Ingredients:           sw.jsonIngredientsToModel(swData.Ingredients),
-		})
+		dbEntity = append(dbEntity, sw.jsonSigleSweetToModel(&swData))
 	}
 
 	return &dbEntity
@@ -138,22 +152,26 @@ func (sw *sweetHandler) jsonIngredientsToModel(ingredients []string) []entities.
 	return ingredientsEntity
 }
 
+func (sw *sweetHandler) modelSingleSweetToJSON(sweet *entities.SweetsCollection) SweetsCollection {
+	return SweetsCollection{
+		Name:                  sweet.Name,
+		ImageClosed:           sweet.ImageClosed,
+		ImageOpen:             sweet.ImageOpen,
+		Description:           sweet.Description,
+		Story:                 sweet.Story,
+		AllergyInfo:           sweet.AllergyInfo,
+		DietaryCertifications: sweet.DietaryCertifications,
+		ProductID:             sweet.ProductID,
+		SourcingValues:        sw.modelSourcingValuesToJSON(sweet.SourcingValues),
+		Ingredients:           sw.modelIngredientsToJSON(sweet.Ingredients),
+	}
+}
+
 func (sw *sweetHandler) modelSweetsCollectionToJSON(jsonStructSweets *[]entities.SweetsCollection) *[]SweetsCollection {
 	var dbEntity []SweetsCollection
 
 	for _, swData := range *jsonStructSweets {
-		dbEntity = append(dbEntity, SweetsCollection{
-			Name:                  swData.Name,
-			ImageClosed:           swData.ImageClosed,
-			ImageOpen:             swData.ImageOpen,
-			Description:           swData.Description,
-			Story:                 swData.Story,
-			AllergyInfo:           swData.AllergyInfo,
-			DietaryCertifications: swData.DietaryCertifications,
-			ProductID:             swData.ProductID,
-			SourcingValues:        sw.modelSourcingValuesToJSON(swData.SourcingValues),
-			Ingredients:           sw.modelIngredientsToJSON(swData.Ingredients),
-		})
+		dbEntity = append(dbEntity, sw.modelSingleSweetToJSON(&swData))
 	}
 
 	return &dbEntity

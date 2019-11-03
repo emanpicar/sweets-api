@@ -43,23 +43,37 @@ func (rh *routeHandler) getAllSweets(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	data := rh.sweetsManager.GetAllSweets()
 
-	json.NewEncoder(w).Encode(data)
+	rh.encodeError(json.NewEncoder(w).Encode(data), w)
 }
 
 func (rh *routeHandler) createSweets(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	data := rh.sweetsManager.CreateSweets()
 
-	json.NewEncoder(w).Encode(data)
+	var reqData sweets.SweetsCollection
+	json.NewDecoder(r.Body).Decode(&reqData)
+
+	data, err := rh.sweetsManager.CreateSweets(&reqData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	rh.encodeError(json.NewEncoder(w).Encode(data), w)
 }
 
 func (rh *routeHandler) updateSweet(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	params := mux.Vars(r)
-	data := rh.sweetsManager.UpdateSweet(params)
+	var reqData sweets.SweetsCollection
+	json.NewDecoder(r.Body).Decode(&reqData)
 
-	json.NewEncoder(w).Encode(data)
+	data, err := rh.sweetsManager.UpdateSweet(mux.Vars(r), &reqData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	rh.encodeError(json.NewEncoder(w).Encode(data), w)
 }
 
 func (rh *routeHandler) deleteSweets(w http.ResponseWriter, r *http.Request) {
@@ -68,5 +82,11 @@ func (rh *routeHandler) deleteSweets(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	data := rh.sweetsManager.DeleteSweet(params)
 
-	json.NewEncoder(w).Encode(data)
+	rh.encodeError(json.NewEncoder(w).Encode(data), w)
+}
+
+func (rh *routeHandler) encodeError(err error, w http.ResponseWriter) {
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
