@@ -16,6 +16,7 @@ type (
 		BatchFirstOrCreate(data *[]entities.SweetsCollection)
 		Insert(data *entities.SweetsCollection) error
 		UpdateByProductID(pID string, data *entities.SweetsCollection) error
+		DeleteByProductID(pID string) (string, error)
 		GetSweetCollections() *[]entities.SweetsCollection
 	}
 
@@ -70,19 +71,34 @@ func (dbHandler *dbHandler) Insert(data *entities.SweetsCollection) error {
 	return nil
 }
 
-func (dbHandler *dbHandler) UpdateByProductID(pID string, data *entities.SweetsCollection) error {
-	err := dbHandler.database.Where(&entities.SweetsCollection{ProductID: pID}).First(data).Error
+func (dbHandler *dbHandler) UpdateByProductID(pID string, sweetData *entities.SweetsCollection) error {
+	searchedData := entities.SweetsCollection{}
+	err := dbHandler.database.Set("gorm:auto_preload", true).Where(&entities.SweetsCollection{ProductID: pID}).First(&searchedData).Error
 	if err != nil {
 		return fmt.Errorf("Sweets with productID:%v does not exist", pID)
 	}
 
-	logger.Log.Infof("########## %+v", data)
-	if err := dbHandler.database.Save(data).Error; err != nil {
+	sweetData.ProductID = pID
+	dbHandler.database.Where(&entities.SourcingValues{ProductID: pID}).Delete(entities.SourcingValues{})
+	dbHandler.database.Where(&entities.Ingredients{ProductID: pID}).Delete(entities.Ingredients{})
+
+	if err := dbHandler.database.Set("gorm:auto_preload", true).Save(sweetData).Error; err != nil {
 		return err
 	}
-	logger.Log.Infof("########## ssss %+v", data)
 
 	return nil
+}
+
+func (dbHandler *dbHandler) DeleteByProductID(pID string) (string, error) {
+	searchedData := entities.SweetsCollection{}
+	err := dbHandler.database.Set("gorm:auto_preload", true).Where(&entities.SweetsCollection{ProductID: pID}).First(&searchedData).Error
+	if err != nil {
+		return "", fmt.Errorf("Sweets with productID:%v does not exist", pID)
+	}
+
+	dbHandler.database.Set("gorm:auto_preload", true).Where(&entities.SweetsCollection{ProductID: pID}).Delete(entities.SweetsCollection{})
+
+	return fmt.Sprintf("Sweets with productID:%v successfully deleted", pID), nil
 }
 
 func (dbHandler *dbHandler) GetSweetCollections() *[]entities.SweetsCollection {

@@ -28,7 +28,7 @@ type (
 		GetAllSweets() *[]SweetsCollection
 		CreateSweets(reqData *SweetsCollection) (*SweetsCollection, error)
 		UpdateSweet(params map[string]string, reqData *SweetsCollection) (*SweetsCollection, error)
-		DeleteSweet(params map[string]string) *[]entities.SweetsCollection
+		DeleteSweet(params map[string]string) (string, error)
 		PopulateDefaultData()
 	}
 
@@ -76,14 +76,13 @@ func (sw *sweetHandler) UpdateSweet(params map[string]string, reqData *SweetsCol
 	return &updatedData, nil
 }
 
-func (sw *sweetHandler) DeleteSweet(params map[string]string) *[]entities.SweetsCollection {
-	logger.Log.Infof("################# %v", params)
-	sweetsList := []entities.SweetsCollection{
-		entities.SweetsCollection{SourcingValues: []entities.SourcingValues{}, Ingredients: []entities.Ingredients{}},
-		entities.SweetsCollection{SourcingValues: []entities.SourcingValues{}, Ingredients: []entities.Ingredients{}},
+func (sw *sweetHandler) DeleteSweet(params map[string]string) (string, error) {
+	successMsg, err := sw.dbManager.DeleteByProductID(params["productId"])
+	if err != nil {
+		return "", err
 	}
 
-	return &sweetsList
+	return successMsg, nil
 }
 
 func (sw *sweetHandler) PopulateDefaultData() {
