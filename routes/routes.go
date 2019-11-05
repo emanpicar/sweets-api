@@ -16,6 +16,7 @@ type (
 
 	routeHandler struct {
 		sweetsManager sweets.Manager
+		router        *mux.Router
 	}
 
 	JsonMessage struct {
@@ -42,6 +43,8 @@ func (rh *routeHandler) registerRoutes(router *mux.Router) {
 	router.HandleFunc("/api/sweets", rh.createSweets).Methods("POST")
 	router.HandleFunc("/api/sweets/{productId}", rh.updateSweet).Methods("PUT")
 	router.HandleFunc("/api/sweets/{productId}", rh.deleteSweets).Methods("DELETE")
+
+	rh.router = router
 }
 
 func (rh *routeHandler) getAllSweets(w http.ResponseWriter, r *http.Request) {
