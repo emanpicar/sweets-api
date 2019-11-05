@@ -18,7 +18,7 @@ type (
 		UpdateByProductID(pID string, data *entities.SweetsCollection) error
 		DeleteByProductID(pID string) (string, error)
 		GetSweetByID(pID string) (*entities.SweetsCollection, error)
-		GetSweetCollections() *[]entities.SweetsCollection
+		GetSweetsCollection() *[]entities.SweetsCollection
 	}
 
 	dbHandler struct {
@@ -113,7 +113,7 @@ func (dbHandler *dbHandler) DeleteByProductID(pID string) (string, error) {
 	return fmt.Sprintf("Sweets with productID:%v successfully deleted", pID), nil
 }
 
-func (dbHandler *dbHandler) GetSweetCollections() *[]entities.SweetsCollection {
+func (dbHandler *dbHandler) GetSweetsCollection() *[]entities.SweetsCollection {
 	var swData []entities.SweetsCollection
 	dbHandler.database.Set("gorm:auto_preload", true).Find(&swData)
 

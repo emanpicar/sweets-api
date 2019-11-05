@@ -43,7 +43,7 @@ func NewManager(dbManager db.DBManager) Manager {
 }
 
 func (sw *sweetHandler) GetAllSweets() *[]SweetsCollection {
-	sweetsList := sw.dbManager.GetSweetCollections()
+	sweetsList := sw.dbManager.GetSweetsCollection()
 	jsonReadyList := sw.modelSweetsCollectionToJSON(sweetsList)
 
 	return jsonReadyList

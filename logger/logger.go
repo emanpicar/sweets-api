@@ -31,8 +31,12 @@ type logger interface {
 var Log logger
 var once sync.Once
 
+func init() {
+	// Initialize logger info as default
+	Log = setUp("info")
+}
+
 // Init Initialzes logger module once
-// required to be called atleast once to avoid invalid memory address error
 func Init(logLevel string) {
 	once.Do(func() {
 		Log = setUp(logLevel)
