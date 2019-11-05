@@ -26,6 +26,7 @@ type (
 
 	Manager interface {
 		GetAllSweets() *[]SweetsCollection
+		GetSweetsByID(params map[string]string) (*SweetsCollection, error)
 		CreateSweets(reqData *SweetsCollection) (*SweetsCollection, error)
 		UpdateSweet(params map[string]string, reqData *SweetsCollection) (*SweetsCollection, error)
 		DeleteSweet(params map[string]string) (string, error)
@@ -46,6 +47,17 @@ func (sw *sweetHandler) GetAllSweets() *[]SweetsCollection {
 	jsonReadyList := sw.modelSweetsCollectionToJSON(sweetsList)
 
 	return jsonReadyList
+}
+
+func (sw *sweetHandler) GetSweetsByID(params map[string]string) (*SweetsCollection, error) {
+	sweetData, err := sw.dbManager.GetSweetByID(params["productId"])
+	if err != nil {
+		return nil, err
+	}
+
+	jsonReadyData := sw.modelSingleSweetToJSON(sweetData)
+
+	return &jsonReadyData, nil
 }
 
 func (sw *sweetHandler) CreateSweets(reqData *SweetsCollection) (*SweetsCollection, error) {

@@ -19,7 +19,7 @@ type (
 	}
 
 	JsonMessage struct {
-		Message string
+		Message string `json:"message"`
 	}
 )
 
@@ -38,6 +38,7 @@ func (rh *routeHandler) newRouter() *mux.Router {
 
 func (rh *routeHandler) registerRoutes(router *mux.Router) {
 	router.HandleFunc("/api/sweets", rh.getAllSweets).Methods("GET")
+	router.HandleFunc("/api/sweets/{productId}", rh.getSweetsByID).Methods("GET")
 	router.HandleFunc("/api/sweets", rh.createSweets).Methods("POST")
 	router.HandleFunc("/api/sweets/{productId}", rh.updateSweet).Methods("PUT")
 	router.HandleFunc("/api/sweets/{productId}", rh.deleteSweets).Methods("DELETE")
@@ -46,6 +47,18 @@ func (rh *routeHandler) registerRoutes(router *mux.Router) {
 func (rh *routeHandler) getAllSweets(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	data := rh.sweetsManager.GetAllSweets()
+
+	rh.encodeError(json.NewEncoder(w).Encode(data), w)
+}
+
+func (rh *routeHandler) getSweetsByID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	data, err := rh.sweetsManager.GetSweetsByID(mux.Vars(r))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		rh.encodeError(json.NewEncoder(w).Encode(&JsonMessage{err.Error()}), w)
+		return
+	}
 
 	rh.encodeError(json.NewEncoder(w).Encode(data), w)
 }

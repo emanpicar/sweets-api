@@ -17,6 +17,7 @@ type (
 		Insert(data *entities.SweetsCollection) error
 		UpdateByProductID(pID string, data *entities.SweetsCollection) error
 		DeleteByProductID(pID string) (string, error)
+		GetSweetByID(pID string) (*entities.SweetsCollection, error)
 		GetSweetCollections() *[]entities.SweetsCollection
 	}
 
@@ -27,17 +28,17 @@ type (
 
 func NewDBManager() DBManager {
 	dbHandler := &dbHandler{}
-	dbHandler.connect()
+	dbHandler.connect(gorm.Open)
 	dbHandler.migrateTables()
 
 	return dbHandler
 }
 
-func (dbHandler *dbHandler) connect() {
+func (dbHandler *dbHandler) connect(openConnection func(dialect string, args ...interface{}) (db *gorm.DB, err error)) {
 	logger.Log.Infoln("Establishing connection to DB")
 
 	var err error
-	dbHandler.database, err = gorm.Open("postgres", fmt.Sprintf("host=%v port=%v user=%v dbname=sweetscollection password=%v sslmode=disable",
+	dbHandler.database, err = openConnection("postgres", fmt.Sprintf("host=%v port=%v user=%v dbname=sweetscollection password=%v sslmode=disable",
 		settings.GetDBHost(), settings.GetDBPort(), settings.GetDBUser(), settings.GetDBPass(),
 	))
 
@@ -52,6 +53,17 @@ func (dbHandler *dbHandler) migrateTables() {
 	dbHandler.database.AutoMigrate(&entities.SweetsCollection{})
 	dbHandler.database.AutoMigrate(&entities.SourcingValues{}).AddForeignKey("product_id", "sweets_collection(product_id)", "CASCADE", "CASCADE")
 	dbHandler.database.AutoMigrate(&entities.Ingredients{}).AddForeignKey("product_id", "sweets_collection(product_id)", "CASCADE", "CASCADE")
+}
+
+func (dbHandler *dbHandler) GetSweetByID(pID string) (*entities.SweetsCollection, error) {
+	searchedData := entities.SweetsCollection{}
+
+	err := dbHandler.database.Where(&entities.SweetsCollection{ProductID: pID}).First(&searchedData).Error
+	if err != nil {
+		return nil, fmt.Errorf("Sweets with productID:%v does not exist", pID)
+	}
+
+	return &searchedData, nil
 }
 
 func (dbHandler *dbHandler) BatchFirstOrCreate(swCollection *[]entities.SweetsCollection) {
