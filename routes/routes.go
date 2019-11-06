@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/emanpicar/sweets-api/logger"
+
 	"github.com/emanpicar/sweets-api/sweets"
 
 	"github.com/gorilla/mux"
@@ -48,6 +50,8 @@ func (rh *routeHandler) registerRoutes(router *mux.Router) {
 }
 
 func (rh *routeHandler) getAllSweets(w http.ResponseWriter, r *http.Request) {
+	logger.Log.Infoln("Getting all sweets")
+
 	w.Header().Set("Content-Type", "application/json")
 	data := rh.sweetsManager.GetAllSweets()
 
@@ -55,6 +59,8 @@ func (rh *routeHandler) getAllSweets(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rh *routeHandler) getSweetsByID(w http.ResponseWriter, r *http.Request) {
+	logger.Log.Infof("Getting sweets by id:%v", mux.Vars(r)["productId"])
+
 	w.Header().Set("Content-Type", "application/json")
 	data, err := rh.sweetsManager.GetSweetsByID(mux.Vars(r))
 	if err != nil {
@@ -70,8 +76,9 @@ func (rh *routeHandler) createSweets(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var reqData sweets.SweetsCollection
-	json.NewDecoder(r.Body).Decode(&reqData)
+	rh.encodeError(json.NewDecoder(r.Body).Decode(&reqData), w)
 
+	logger.Log.Infof("Creating sweets in id:%v", reqData.ProductID)
 	data, err := rh.sweetsManager.CreateSweets(&reqData)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -83,6 +90,8 @@ func (rh *routeHandler) createSweets(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rh *routeHandler) updateSweet(w http.ResponseWriter, r *http.Request) {
+	logger.Log.Infof("Updating sweets in id:%v", mux.Vars(r)["productId"])
+
 	w.Header().Set("Content-Type", "application/json")
 
 	var reqData sweets.SweetsCollection
@@ -99,6 +108,8 @@ func (rh *routeHandler) updateSweet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rh *routeHandler) deleteSweets(w http.ResponseWriter, r *http.Request) {
+	logger.Log.Infof("Deleting sweets id:%v", mux.Vars(r)["productId"])
+
 	w.Header().Set("Content-Type", "application/json")
 
 	params := mux.Vars(r)

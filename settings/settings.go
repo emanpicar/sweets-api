@@ -31,3 +31,19 @@ func GetDBUser() string {
 func GetDBPass() string {
 	return getEnv("DB_PASS", "secretdbpass")
 }
+
+func GetServerHost() string {
+	return getEnv("SERVER_HOST", "")
+}
+
+func GetServerPort() string {
+	return getEnv("SERVER_PORT", "9988")
+}
+
+func GetServerPublicKey() string {
+	return getEnv("SERVER_PUBLIC_KEY", "./certs/cert.pem")
+}
+
+func GetServerPrivateKey() string {
+	return getEnv("SERVER_PRIVATE_KEY", "./certs/key.pem")
+}

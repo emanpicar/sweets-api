@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/emanpicar/sweets-api/db"
 	"github.com/emanpicar/sweets-api/logger"
 	"github.com/emanpicar/sweets-api/routes"
@@ -24,9 +26,9 @@ func main() {
 	sweetsManager.PopulateDefaultData()
 
 	logger.Log.Fatal(http.ListenAndServeTLS(
-		":9988",
-		"./certs/cert.pem",
-		"./certs/key.pem",
+		fmt.Sprintf("%v:%v", settings.GetServerHost(), settings.GetServerPort()),
+		settings.GetServerPublicKey(),
+		settings.GetServerPrivateKey(),
 		routes.NewRouter(sweetsManager),
 	))
 }

@@ -1,6 +1,6 @@
 FROM golang:1.13
 
-ARG PROXY_URI="http://10.158.17.67:8080"
+ARG PROXY_URI=""
 
 WORKDIR $GOPATH/src/github.com/emanpicar/sweets-api
 
