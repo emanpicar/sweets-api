@@ -37,7 +37,7 @@ $ docker-compose up
     - DELETE "https://{HOST}:9988/api/sweets/{productId}"
 
 ### ERD
-![](ERD.png)
+![](ERD.PNG)
 
 ### Todos
 
